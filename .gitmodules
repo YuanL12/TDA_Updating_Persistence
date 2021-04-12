@@ -1,0 +1,3 @@
+[submodule "BATS"]
+	path = BATS
+	url = git@github.com:bnels/BATS.git
