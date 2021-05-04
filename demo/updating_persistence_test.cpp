@@ -25,7 +25,7 @@ int main() {
 	//sparse vectos are specified by index and its value(nonzero) 
 	std::vector<VT> cols{VT({0},{1}), VT({1,2},{1,1}), VT({0,2},{1,1})};
 	
-	//intialize a matrix
+	//initialize a matrix
 	MatT B(4, 3, cols);
 	//B.swap_cols(0,1);//swap columns
 	//B.print();//print columns
@@ -37,7 +37,7 @@ int main() {
 	if (U.is_upper())
 		if (R.is_reduced())
 			if (R * u_inv(U) == B)
-				std::cout << "before permuation, success"<< '\n';
+				std::cout << "before permutation, success"<< '\n';
 
 	//swap columns of row permutation matrix will result row change of 
 	//the original one
@@ -50,9 +50,8 @@ int main() {
     col_perm.swap_cols(0,1);
 	
 	update_reduction<VT>(R, U, row_perm, col_perm);
-
 	if (R * u_inv(U) == row_perm * B * col_perm){
-		std::cout << "after permuation, success"<< '\n';
+		std::cout << "after permutation, success"<< '\n';
 	}
 	return 0;
 }
