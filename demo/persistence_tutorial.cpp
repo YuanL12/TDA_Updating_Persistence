@@ -41,9 +41,18 @@ int main() {
     print_2D_vectors(vals);
 
     /*
-    Now let's build a filtration and reduce
+    Now let's build a filtration 
     */
     auto F = bats::Filtration(X, vals);
+    // if  you want to change filtration value of a specific simplex 
+    s = {0,1,2};
+    F.add(6.0, s);
+    std::cout << "\nafter setting the filtration value of {0,1,2} as 6" << std::endl;
+    print_2D_vectors(F.vals());
+
+    /*
+    Now we are ready to reduce
+    */
     auto C = bats::Chain(F, FT());
     auto R = bats::Reduce(C);
     
@@ -55,5 +64,9 @@ int main() {
         std::cout << p.str() << std::endl;
     }
 
+    std::cout << "\npersistence pair at dim 1" << std::endl;
+    for (auto& p: R.persistence_pairs(1)) {
+        std::cout << p.str() << std::endl;
+    }
     return EXIT_SUCCESS;
 }

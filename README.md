@@ -26,5 +26,18 @@ this should create a file called "hello.out".  Try running it.
 ## Getting Started
 ### Matrix
 If you are new to BATs, please go to `matrix_tutorial.cpp` to see the implementation of matrices.
-### PH
+### Persistence Homology
 Then go to `persistence_tutorial.cpp` to see the implementation of persistence homology.
+#### Example
+The format of persistence pair:
+\<dimension> : (\<birth_filtration_value>, \<death_filtration_value>) \<birth_index,death_index>
+
+```
+persistence pair at dim 0
+0 : (2,inf) <0,-1>
+0 : (3,3) <1,0>
+0 : (5,5) <2,1>
+
+persistence pair at dim 1
+1 : (5,6) <2,0>
+```
