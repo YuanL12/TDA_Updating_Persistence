@@ -21,3 +21,10 @@ this should create a file called "hello.out".  Try running it.
 ```
 ./hello.out
 ```
+
+
+## Getting Started
+### Matrix
+If you are new to BATs, please go to `matrix_tutorial.cpp` to see the implementation of matrices.
+### PH
+Then go to `persistence_tutorial.cpp` to see the implementation of persistence homology.
