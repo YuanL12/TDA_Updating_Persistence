@@ -55,7 +55,7 @@ $$
 $$
 2. **One line notation**: only using the second line in a Two-line notation.
 $$(2\ 5\ 4\ 3\ 1)$$
-3. **Cycle notation**: normal noation used in abstract algebra
+3. **Cycle notation**: normal notation used in abstract algebra
 $$
 \left(\begin{array}{lllll}
 1 & 2 & 3 & 4 & 5 \\
@@ -70,7 +70,7 @@ b) the index of the second element of a vector should be 1
 ...
 
 #### Connection
-In BATs, a permutation of a vector takes the **One line notation**. To understand the implemenation of the permutation function, 
+In BATs, a permutation of a vector takes the **One line notation**. To understand the implementation of the permutation function, 
 ```C++
 // apply inverse permutation in-place
 // O(nz log nz) where nz is #non-zeros
@@ -87,3 +87,120 @@ there is a notable connection between **One line notation** and **List of new in
 Let $v$ is a list of new indices, then the permutation induced by $v$ is the inverse of $\sigma(v)$, where $\sigma(v)$ is the permutation with the same order of elements in $v$.
 
 For example, the permutation induced by $\{ 5\ 1\ 4\ 3\ 2\}$ is equal to $(5\ 1\ 4\ 3\ 2)^{-1}$. 
+
+## Updating process
+Orginal process for computing PH
+```C++
+ using FT = ModP<int, 2>; // Field type Mod 2
+ std::vector<double> f0 = {0.0, 0.1, 0.2}; // Filtration value on each vertex
+ vals = lower_star_filtration(X, f0); // Filtration value on each simplex
+ auto F = bats::Filtration(X, vals); // Build Filtration
+ auto C = bats::Chain(F, FT()); //Build FilteredChainComplex
+ auto R = bats::Reduce(C); //Build ReducedFilteredChainComplex
+```
+
+There are several options to update and we will first list the several structs/classes used in the updating process.
+Before we start, in all options, we assume that the filtration has already been established by:
+`auto F = bats::Filtration(X, vals);`, where X is a simplicial complex and vals is its filtration value of each simplex. 
+
+1. 创造一个Filtered Chain Complex：
+   `auto C = bats::Chain(F, FT());`
+
+   It will return a FilteredChainComplex, which has a member ChainComplex.
+   Notice that, when initialling C, the constructor of FilteredChainComplex will
+   1.1 自动根据filtration值排序,并存储到一个member perm
+   1.2 存储`ChainComplex<MT> C = F.complex()`的Chain Complex作为一个member
+
+2. 创造一个Reduced Filtered Chain Complex，即，开始Reduction Algorithm：
+   `auto R = bats::Reduce(C);`
+
+   It will return a ReducedFilteredChainComplex, which has a member ReducedChainComplex.
+   Notice that, when initializing R, the constructor of ReducedFilteredChainComplex will 
+   1.1 存储FilteredChainComplex的member：permutation, filtration value and chain complex
+   1.2 初始化一个`ReducedChainComplex<MT> RC = C.complex()`的ReducedChainComplex
+
+3. 通过ReducedChainComplex进行Reduction Algorithm:
+    ```C++
+   	// compute reduced chain complex from chain complex
+	ReducedChainComplex(const ChainComplex<MT> &C) {
+		size_t dmax = C.maxdim() + 1;
+		//dim = C.dim;
+		U.resize(dmax);
+		R.resize(dmax);
+		I.resize(dmax); //  a set of indices that can be used for a homology revealing basis.
+		p2c.resize(dmax); // store the pivot of each cloumn 
+
+		// TODO: can parallelize this
+		for (size_t k = 0; k < dmax; k++) {
+			U[k] = MT::identity(C.dim(k));
+			R[k] = C.boundary[k];
+			p2c[k] = reduce_matrix(R[k], U[k]);
+		}
+
+		set_indices();
+
+	}
+    ```
+
+### Updating persistence comparison
+Option 1. Updating filtration value in FilteredChainComplex 
+i.e., updating C directly by 
+```C++
+ C.update_filtration(vals);
+ R = bats::Reduce(C);
+ R.print_summary()
+```
+
+Option 2. Updating filtration value in ReducedFilteredChainComplex 
+i.e., updating R by
+```C++
+ R.update_filtration(vals);
+ R.print_summary();
+```
+Next, in the struct function `update_filtration` of ReducedFilteredChainComplex in filtered_basis.hpp, `ReducedChainComplex<MT> RC;` is updated by `RC.permute_basis(iperm);`.
+
+Now, go to the `permute_basis` function in basis.hpp. There are two main steps: one is permute rows and column U[k] and R[k] 
+
+
+### Reduction Algorithm
+```C++
+p2c_type reduce_matrix_standard(ColumnMatrix<TVec> &M, ColumnMatrix<TVec> &U) {
+	std::cout << " go into the reduce_matrix_standard function in reduction.hpp" << std::endl;
+	if (M.ncol() != U.ncol()) {throw std::runtime_error("Number of columns are not the same!");}
+
+	// p2c_type pivot_to_col;
+	p2c_type pivot_to_col(M.nrow(), bats::NO_IND);
+	// create a temporary vector for use in axpys
+	typename TVec::tmp_type tmp;
+
+	// loop over columns
+	for (size_t j = 0; j < M.ncol(); j++) {
+		while(M[j].nnz() > 0) {
+			// std::cout << j << " : ";
+			// M[j].print_row();
+			// piv is index-value nzpair
+			auto piv = M[j].lastnz();
+			// if (pivot_to_col.count(piv.ind) > 0) {
+			if (pivot_to_col[piv.ind] != bats::NO_IND) { //Looking at if the pivot of column j has already been appeared in (pivot_to_col) previous column  is equivalent to look at the column before j with the same pivot as j
+				// eliminate pivot
+				size_t k = pivot_to_col[piv.ind];
+				auto a = piv.val / M[k].lastnz().val;
+				M[j].axpy(-a, M[k], tmp);
+				U[j].axpy(-a, U[k], tmp); // update change of basis
+			} else {
+				// new pivot
+				pivot_to_col[piv.ind] = j;
+				break;
+			}
+		}
+	}
+	return pivot_to_col;
+}
+```
+
+One thing worth noticing is the criterion for determining if there are columns before has the same pivot as the current column in the loop. 
+BATs smartly uses `pivot_to_col` to store where each row appear as a pivot of a column, and so, for instance, `pivot_to_col[1]` will be the index of the column in which one or the index of the 2nd row is the column's pivot. And, the index of a row does not appear as a pivot of any column, `pivot_to_col` will store the value as the maximum of `size_t`.
+During the reduction loop, 
+- if the `pivot_to_col[piv.ind] == bats::NO_IND`, it means the pivot of the current column is still unused by previous column and so can be stored by `pivot_to_col[piv.ind] = j;`.
+- if the `pivot_to_col[piv.ind] != bats::NO_IND`, it means the pivot of the current column has already been used by some previous column and so we should do the reduction! Also, `pivot_to_col[piv.ind]` will tell which column is using the pivot.
+
