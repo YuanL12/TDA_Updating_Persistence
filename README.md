@@ -47,23 +47,27 @@ persistence pair at dim 1
 #### Notaion
 Notice that there are several ways to represent a permutation.
 1. **Two-line notation**: one-to-one mapping from the first line to the second line.
-$$
+```math
 \sigma=\left(\begin{array}{lllll}
 1 & 2 & 3 & 4 & 5 \\
 2 & 5 & 4 & 3 & 1
 \end{array}\right)
-$$
+```
 2. **One line notation**: only using the second line in a Two-line notation.
-$$(2\ 5\ 4\ 3\ 1)$$
+```math
+(2\ 5\ 4\ 3\ 1)
+```
 3. **Cycle notation**: normal notation used in abstract algebra
-$$
+```math
 \left(\begin{array}{lllll}
 1 & 2 & 3 & 4 & 5 \\
 2 & 5 & 4 & 3 & 1
 \end{array}\right)=(125)(34)=(34)(125)=(34)(512) .
-$$
+```
 4. **List of new indices**: storing the new indices of each element
-$$\{ 5\ 1\ 4\ 3\ 2\} $$
+```math
+\{ 5\ 1\ 4\ 3\ 2\}
+```
 ,which means, after permutation,
 a) the index of the first element of a vector should be 5
 b) the index of the second element of a vector should be 1
@@ -99,7 +103,7 @@ Orginal process for computing PH
  auto R = bats::Reduce(C); //Build ReducedFilteredChainComplex
 ```
 
-There are several options to update and we will first list the several structs/classes used in the updating process.
+There are several options to update and we will first list several structs/classes used in the updating process.
 Before we start, in all options, we assume that the filtration has already been established by:
 `auto F = bats::Filtration(X, vals);`, where X is a simplicial complex and vals is its filtration value of each simplex. 
 
@@ -164,6 +168,9 @@ Now, go to the `permute_basis` function in basis.hpp. There are two main steps: 
 
 ### Reduction Algorithm
 ```C++
+// perform reduction algorithm on a column matrix in-place
+// apply change of basis to U
+// invariant M * U = R
 p2c_type reduce_matrix_standard(ColumnMatrix<TVec> &M, ColumnMatrix<TVec> &U) {
 	std::cout << " go into the reduce_matrix_standard function in reduction.hpp" << std::endl;
 	if (M.ncol() != U.ncol()) {throw std::runtime_error("Number of columns are not the same!");}
@@ -199,8 +206,36 @@ p2c_type reduce_matrix_standard(ColumnMatrix<TVec> &M, ColumnMatrix<TVec> &U) {
 ```
 
 One thing worth noticing is the criterion for determining if there are columns before has the same pivot as the current column in the loop. 
-BATs smartly uses `pivot_to_col` to store where each row appear as a pivot of a column, and so, for instance, `pivot_to_col[1]` will be the index of the column in which one or the index of the 2nd row is the column's pivot. And, the index of a row does not appear as a pivot of any column, `pivot_to_col` will store the value as the maximum of `size_t`.
+BATs smartly uses `pivot_to_col` to store where each row appear as a pivot of a column, and so, for instance, `pivot_to_col[1]` will be the index of the column in which 1 (the index of the 2nd row) is the column's pivot. And, the index of a row does not appear as a pivot of any column, `pivot_to_col` will store the value as the maximum of `size_t`.
 During the reduction loop, 
 - if the `pivot_to_col[piv.ind] == bats::NO_IND`, it means the pivot of the current column is still unused by previous column and so can be stored by `pivot_to_col[piv.ind] = j;`.
 - if the `pivot_to_col[piv.ind] != bats::NO_IND`, it means the pivot of the current column has already been used by some previous column and so we should do the reduction! Also, `pivot_to_col[piv.ind]` will tell which column is using the pivot.
+
+##### Key insight of Reduction algorithm
+The way of understanding the Reduction algorithm is interesting and provides several applications.
+First of all, it is performing reduction algorithm on a column matrix in-place and keeping the invariant $M * U = R$: we initializing M as R and U as an identity matrix, and then performing reduction on M and recording the reduciton operations in U, until M becomes reduced.
+
+But, in fact, since U is playing the role of recording column operations, U are not needed to assumed or initialized as an identity matrix. Thus, the only thing we only need to care is the invariant: $R = M * U$. One application is: 
+If there is another upper triangle matrix U_1 and we now want to reduce $M' = M * U_1^{-1}$, we could just pass $U_1$ as the initializer of $U$ in the reduction algorithm. And in the end of the reduction, $RU^{-1} = M'$
+
+```math
+a^2+b^2=c^2
+```
+
+
+
+#### Memebers of R
+ReducedChainComplex (RCC) has four members:
+```C++
+std::vector<MT> upper_triangle_mat = RCC.U; // basis matrices
+std::vector<MT> reduced_mat = RCC.R; // reduced matrices
+std::vector<std::vector<size_t>> homology_basis_indices = RCC.I;
+std::vector<p2c_type> pivot_to_column= RCC.p2c;
+```
+
+- The first two (upper triangle matrices U and reduced matrices R) are just factorization results from reduction algorithm. 
+- `I` is the indices of homology revealing basis, which is obtained by: for each dimension k, finding every index of the zero column in `R[k]`, which is also not a pivot for the columns in `R[k+1]`.
+- `p2c` is the "pivot to column" map: for each dimension k, its elements stores the index of the column, if row is a pivot of the column, otherwise will the maximum value of `size_t`.
+  For instance, `p2c[1][2]` will be, in `R[1]`, the index of the column, in which 2 (the index of the 3rd row) is the column's pivot.
+
 
