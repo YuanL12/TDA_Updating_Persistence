@@ -1,0 +1,269 @@
+// col_matrix.hpp
+
+	template <class ...Ts>
+	void insert_column(const size_t& index, Ts (&&...args)){
+		// first append a row to the end
+		append_column(args...); 
+		// second permute it 
+		std::vector<size_t> colperm;
+		colperm.reserve(n);
+		for (size_t i = 0; i < n ; i++){
+			size_t j;
+			if (i < index) j = i;
+			if (i == index) j = n-1;
+			if (i > index) j = i-1;
+			colperm.emplace_back(j);
+		}
+		permute_cols(colperm);
+	}
+
+	// append a row to the end
+	void append_row(const std::vector<val_type> & row) {
+		if (row.size() == ncol()){
+			for (size_t j = 0; j < ncol(); j++) {
+				col[j].append(m , row[j]);
+			}
+			++m;
+		}else{
+			std::cout << "\nUnable to add row, since the dimension does not match" << std::endl;
+		}
+	}
+
+	void insert_row(const size_t& index, const std::vector<val_type> & row){
+		// first append a row to the end
+		append_row(row);
+		// second permute it 
+		std::vector<size_t> rowperm;
+		rowperm.reserve(m);
+		for (size_t i = 0; i < m ; i++){
+			size_t j;
+			if (i < index) j = i;
+			if (i == index) j = m-1;
+			if (i > index) j = i-1;
+			rowperm.emplace_back(j);
+		}
+		permute_rows(rowperm);
+	}
+	
+	void erase_column(const size_t& index){
+    	col.erase(col.begin()+index);
+		--n;
+	}
+
+	void erase_row(const size_t& index){
+		for (size_t j = 0; j < ncol(); j++) {
+			col[j].erase_for_matrix(index);
+		}
+		--m;
+	}
+
+    // permute rows in-place
+    void permute_rows(const std::vector<size_t> &rowperm) {
+        // // TODO: this is trivially parallelizable
+		auto iperm = bats::util::inv_perm(rowperm);
+        for (size_t i = 0; i < col.size(); i++) {
+            col[i].ipermute(iperm);
+        }
+    }
+
+
+// filtered_basis.hpp
+
+	// update filtration
+	void update_filtration_by_UQL(const std::vector<std::vector<T>> newval) {
+		// step 1: determine permutation order for newval
+		auto perms = filtration_sortperm(newval);
+		
+		// get inverse permutation for current permutation
+		auto iperm = filtration_iperm(perm);
+
+		// step 2: determine update to old permutation
+		// iperm[k] will hold the updated permutation temporarily
+		std::vector<T> tmp; // temporary vector
+		for (size_t k = 0; k < iperm.size(); k++) {
+			bats::util::apply_perm(iperm[k].data(), tmp, perms[k]);
+		}
+
+		// step 3: apply permutation updates to ReducedChainComplex RC
+		RC.UQL_permute_basis(iperm); // 代表先逆回原，再进行新permutation
+
+		// step 4: store new permutation
+		perm = perms;
+
+		// store values as well
+		val = newval;
+
+	}
+
+// basis.hpp
+
+	// Return an identity permutation, k is its length
+	std::vector<size_t> identity_perm(const size_t& k){
+		std::vector<size_t> iden_perm;
+		for(size_t j= 0; j < k; j++){
+			iden_perm.push_back(j);
+		}
+		return iden_perm;
+	}
+
+	// update basis in all dimensions
+	template <typename... Args>
+	void UQL_permute_basis(const std::vector<std::vector<size_t>> &perm, Args ...args) {
+		for (size_t k = 0; k < perm.size(); k++) {
+			//permute_basis_option2(k, perm[k]);
+			auto row_perm = identity_perm(R[k].nrow());
+			auto col_perm = identity_perm(R[k].ncol());
+			if (k == 0) {
+				col_perm = perm[k];
+			}
+			else 
+			{
+				row_perm =  perm[k-1];
+				col_perm = perm[k];	
+			}
+			UQL_update_reduction(k, row_perm, col_perm);
+		}
+	}
+
+	void UQL_update_reduction(size_t k, const std::vector<size_t> &row_perm, const std::vector<size_t> &column_perm){	
+		U[k].permute_rows(bats::util::inv_perm(column_perm));
+		auto F = UQL(U[k]);
+
+		R[k] = R[k] * l_inv(F.L) * F.E.transpose();
+		R[k].permute_rows(row_perm);
+		U[k] = F.U;
+		p2c[k] = reduce_matrix(R[k], U[k]);
+
+		set_indices();
+	}
+
+	// permute basis in dimension k
+	// B_k U_k = R_k, so when we permute columns of B_k, we must permute rows of U_k
+	// we also permute rows of R_{k+1}
+	void permute_matrices(size_t k, const std::vector<size_t> &perm) {
+		auto iperm = bats::util::inv_perm(perm);
+		if (k == 0) {
+			// only worry about boundary[1]
+			R[1].ipermute_rows(perm);
+		} else if (k == maxdim()) {
+			// only need to worry about rows of U[k]
+			U[k].ipermute_rows(iperm);
+		} else {
+			// need to handle boundary[k] and boundary[k+1]
+			U[k].ipermute_rows(iperm);
+			R[k+1].ipermute_rows(iperm);
+		}
+		// at end of this, homology classes are invalidated
+	}
+
+	/*
+	Updating basis by option 2: when we update the ReducedFilteredChainComplex, it might be faster
+	*/
+	void permute_basis_option2(size_t k, const std::vector<size_t> &perm) {
+
+		// for each k, perm represents the permutation for the column of B[k]!!!
+		// and the permutation of rows of B[k+1]
+		auto iperm = bats::util::inv_perm(perm);
+		if (k == 0) {
+			// only worry about rows of B[1]
+			R[1].permute_rows(perm);
+		} else if (k == maxdim()) {
+			// only need to worry about columns of B[k]
+			U[k].permute_rows(iperm);
+		} else {
+			// need to permute columns of B[k] (equivalent to inverse permute of rows of U[k]) 
+			// rows of B[k+1] (equivalent to rows of R[k+1])
+			U[k].permute_rows(iperm); 
+			R[k+1].permute_rows(perm);
+		}
+		// at end of this, homology classes are invalidated
+	}
+
+	// update basis in all dimensions
+	template <typename... Args>
+	void permute_basis(const std::vector<std::vector<size_t>> &perm, Args ...args) {
+		for (size_t k = 0; k < perm.size(); k++) {
+			//permute_matrices(k, perm[k]);
+			permute_basis_option2(k, perm[k]);
+		}
+		// next we update the factorizations
+		for (size_t k = 0; k < perm.size(); k++) {
+			update_reduction2(k, args...);
+		}
+		set_indices(); // update homology indices
+	}
+
+
+// filtered_chain_complex.hpp
+	/*
+	update filtration by general information about permutation/addition/deletion
+	Two memebers of FCC (perm and val) will not be used in updating homology, 
+	so we do not update here (for now?)
+	*/ 
+	template <typename I>
+	void update_filtration(const I & updating_information){
+		//C.update_basis(updating_information.information);
+
+		// perm = identity permuation;
+		// val = F.vals();
+	}
+
+// chain_complex.hpp
+
+	// update basis in dimension k
+	template <typename Information_k_type>
+	void update_basis(size_t k, const Information_k_type &UI_k) {
+		std::vector<size_t> PI = UI_k.permutation_of_intersection; // permutation information
+		auto DI = UI_k.deletion_of_simplices; // deletion information
+		auto AI = UI_k.addition_of_simplices; // addition inforamtion
+
+		std::cout << "\nin the update_basis function of chain_complex.hpp"<< std::endl;
+		std::cout << "for dimension "<< k << std::endl;
+		if (k == 0) {
+			// for boundary[0]:
+			// 1. delete columns
+			if (!DI.empty()){
+				std::cout << "do deletion" << std::endl;
+				for(auto simplex_info: DI){
+					boundary[0].erase_column(simplex_info.index_in_A);
+				}
+			}
+			// 2. permute columns(needed here, will be used for boundary[1] to add columns)
+			boundary[0].permute_cols(PI);
+			// 3. addition
+			if (!AI.empty())
+			{
+				std::cout << "do addition" << std::endl;
+				for(auto simplex_info: AI){
+					auto i = simplex_info.index_in_B;
+					// boundary[0].insert(boundary[0].begin() + i, 7);
+				}
+			}
+			boundary[0].print();
+		} else {
+			// for boundary[k]:
+
+			// 3. delete columns 
+			// 4. delete rows
+
+			// 1. add rows to the end
+			// 2. add columns to the end
+
+			// 5. permute rows
+			// 6. permute columns
+
+
+			// need to handle boundary[k] and boundary[k+1]
+			// boundary[k].permute_cols(perm);
+			// boundary[k+1].ipermute_rows(bats::util::inv_perm(perm));
+		}
+	}
+
+	// update basis in all dimensions
+	template <typename Information_type>
+	void update_basis(const Information_type &UI) {
+		// for (size_t k = 0; k < UI.size(); k++) {
+		// 	
+		// }
+		update_basis(0, UI[0]);
+	}
