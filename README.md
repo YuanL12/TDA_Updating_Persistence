@@ -1,6 +1,11 @@
 # TDA_Updating_Persistence
 This is a project about updating_persistence mentored by Dr. Nelson
 
+## Experiment Resutls
+1. In Rips Filtration, our updating algorithm will reduce the number of non-zeros in factorization.
+2. Rips Filtration using enclosing radius will acclerate the speed much.
+3. The relation between the number of non-zeros and the time of updating persistence have an unclear relation.
+
 ## Updating
 Since BATS is a git submodule, to you may need to use
 ```

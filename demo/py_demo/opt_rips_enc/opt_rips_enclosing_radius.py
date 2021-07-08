@@ -19,14 +19,14 @@ lr = 1e-2 # persistence penalty
 
 t0 = time.monotonic()
 DX = distance.squareform(distance.pdist(X))
-# rX = bats.enclosing_radius(bats.Matrix(DX))
-F, imap = bats.LightRipsFiltration_extension(bats.Matrix(DX), np.inf , 2)
+rX = bats.enclosing_radius(bats.Matrix(DX))
+F, imap = bats.LightRipsFiltration_extension(bats.Matrix(DX), rX , 2)
 R = bats.reduce(F, bats.F2())
 t1 = time.monotonic()
 #print("initialization: {} sec.".format(t1-t0))
 F_old = F
 
-iter_times = 100
+iter_times = 200
 for i in range(iter_times):
     #print("iter", i)
     # Optimize H1 length
@@ -34,7 +34,7 @@ for i in range(iter_times):
     t0 = time.monotonic()
     ps = R.persistence_pairs(1)
     t1a = time.monotonic()
-    #print("\tpairs: {} sec.".format(t1a - t0))
+    #print("\tfind pairs: {} sec.".format(t1a - t0))
     
     t0b = time.monotonic()
     complex_old = F_old.complex() # complex of filtration
@@ -42,8 +42,12 @@ for i in range(iter_times):
     
     # change the posistion of two vertices 
     # that are related to the birth of the persistence pair
+
+    #print("rX = ", rX)
     for p in ps:
         if p.length() > 0:
+        # if p.length() > 0 and np.abs(p.birth() - rX) > 1e-4:
+            #print(p)
             d = p.dim()
             # get indices of two vertices of the (birth) edge 
             bi = p.birth_ind() # index of birth edge 
@@ -52,23 +56,31 @@ for i in range(iter_times):
             grad_div_2 = 2 * (p.death() - p.birth())* (X[birth_vertex1_i] - X[birth_vertex2_i])
             X[birth_vertex1_i] -=  (lr/ filtration_vals_old[bi]) * (grad_div_2)
             X[birth_vertex2_i] +=  (lr/ filtration_vals_old[bi]) * (grad_div_2)
-
-            # get the death index of related edge 
-            di = imap[d+1][p.death_ind()] # maps death_ind to the death edge (related to the 2-simplex destroys H1)
-            # get index of two vertices of the (birth) edge 
-            [death_vertex1_i, death_vertex2_i] = complex_old.get_simplex(1, di)
-            # Gradient Descent
-            grad_div_2 = 2 * (p.death() - p.birth())*  (X[death_vertex1_i] - X[death_vertex2_i])
-            X[death_vertex1_i] +=  (lr/ filtration_vals_old[di]) * (grad_div_2)
-            X[death_vertex2_i] -=  (lr/ filtration_vals_old[di]) * (grad_div_2)
+            #print("update birth success")
+            # get the death index of related edge
+            if p.death_ind() > len(imap[d+1])-1:
+                print("death index exceed limit: ", p.death_ind()) 
+                print("p is ", p)
+            
+            if p.death() != float('inf') and p.death_ind() <= len(imap[d+1])-1:
+                di = imap[d+1][p.death_ind()] # maps death_ind to the death edge (related to the 2-simplex destroys H1)
+                # get index of two vertices of the (birth) edge 
+                [death_vertex1_i, death_vertex2_i] = complex_old.get_simplex(1, di)
+                # Gradient Descent
+                grad_div_2 = 2 * (p.death() - p.birth()) *  (X[death_vertex1_i] - X[death_vertex2_i])
+                X[death_vertex1_i] +=  (lr/ filtration_vals_old[di]) * (grad_div_2)
+                X[death_vertex2_i] -=  (lr/ filtration_vals_old[di]) * (grad_div_2)
+                #print("update death success")
+            
         
     t1b = time.monotonic()
-    #print("\tOptimize: {} sec.".format(t1b - t0b))
+    #print("\tUpdate Dataset: {} sec.".format(t1b - t0b))
     
     # extend filtration
     t0c = time.monotonic()
     DX = distance.squareform(distance.pdist(X))
-    F_new, imap = bats.LightRipsFiltration_extension(bats.Matrix(DX), np.inf, 2)
+    rX = bats.enclosing_radius(bats.Matrix(DX))
+    F_new, imap = bats.LightRipsFiltration_extension(bats.Matrix(DX), rX, 2)
     t1c = time.monotonic()
     #print("\textension: {} sec.".format(t1c - t0c))
     
