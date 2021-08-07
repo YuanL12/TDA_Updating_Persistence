@@ -1,4 +1,5 @@
 #include <bats.hpp>
+#include <util/print.hpp>
 #include <vector>
 #include <iostream>
 #define F2 ModP<int, 2>
@@ -16,12 +17,13 @@ int main()
     //Initialize column matrix by sparse vector in mod 2
     using VT = SparseVector<F2, size_t>;
 	using MatT = ColumnMatrix<VT>;
-	//sparse vectos are specified by index and its value(nonzero) 
-	std::vector<VT> cols{VT({0},{1}), VT({1,2},{1,1}), VT({0,2},{1,1})};
-	// creat column
+	// sparse vectos are specified by index and its value(nonzero) 
+    // creat column
+	std::vector<VT> cols{VT({0,1,2},{1,1,1}), VT({1,2},{1,1}), VT({0,2},{1,1})};
+
 	MatT B(4, 3, cols);
 	//B.swap_cols(0,1);//swap columns
-	//B.print();//print columns
+	//B.print();//print matrix
 
     std::cout << "\nCSC matrix M convert to Column matrix(mod 2) C" << std::endl;
     MatT C(M); // CSC matrix convert to Column matrix with mod 2
@@ -32,9 +34,9 @@ int main()
     std::vector<size_t> perm = {2,1,0,3};
     auto inv_perm = bats::util::inv_perm(perm);
     std::cout << "original" << std::endl;
-    print_1D_vectors(perm);
+    bats::print_1D_vectors(perm);
     std::cout << "its inverse is" << std::endl;
-    print_1D_vectors(inv_perm);
+    bats::print_1D_vectors(inv_perm);
 
     // if you want to permute rows 
     perm = {2,0,1}; // two-line notation, not cycle notation 

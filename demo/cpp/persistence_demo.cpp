@@ -1,12 +1,13 @@
 #include <bats.hpp>
+#include <util/print.hpp>
 #include <vector>
 #include <iostream>
-#include <plu.hpp>
 
 using FT = ModP<int, 2>;
 
 using CpxT = bats::LightSimplicialComplex<size_t, std::unordered_map<size_t, size_t>>;
 // using CpxT = bats::SimplicialComplex;
+using namespace bats;
 
 int main() {
 
@@ -32,18 +33,41 @@ int main() {
     /*
     Now let's exend a filtration
     */
-    // filtration value on each simplex
-    std::vector<std::vector<double>> vals = {{1,3,2},{5,6,4},{7}}; 
+    std::vector<double> f0 = {5.0, 2.0, 3.0}; // filtration value on each vertex
+    
+    // lower star filtration
+    // store filtration vaules of all simplices into a vector of vectors
+    auto [vals, imap] = lower_star_filtration(X, f0);
+    std::cout << "\nfiltration values on each simplices" << std::endl;
+    print_2D_vectors(vals);
+
     /*
     Now let's build a filtration 
     */
     auto F = bats::Filtration(X, vals);
     // if  you want to change filtration value of a specific simplex 
-    s = {0,1,3};
-    F.add(3.0, s);
+    s = {0,1,2};
+    F.add(6.0, s);
+    std::cout << "\nafter setting the filtration value of {0,1,2} as 6" << std::endl;
     print_filtration_info(F);
 
-    std::cout << "\nsummary of simpilcial complex X" << std::endl;
-    X.print_summary(); 
+    /*
+    Now we are ready to reduce
+    */
+    auto C = bats::Chain(F, FT());
+    auto R = bats::Reduce(C);
+    
+    std::cout << "\noverall information of Reduced matrix" << std::endl;
+    R.print_summary();
+
+    std::cout << "\npersistence pair at dim 0" << std::endl;
+    for (auto& p: R.persistence_pairs(0)) {
+        std::cout << p.str() << std::endl;
+    }
+
+    std::cout << "\npersistence pair at dim 1" << std::endl;
+    for (auto& p: R.persistence_pairs(1)) {
+        std::cout << p.str() << std::endl;
+    }
     return EXIT_SUCCESS;
 }

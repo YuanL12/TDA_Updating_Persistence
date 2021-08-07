@@ -4,7 +4,7 @@ PROFFLAGS = -pg -O3
 DBFLAGS = -g -O1
 OPFLAGS = -O3 -DBATS_OPCOUNT
 CXX = g++
-IFLAGS = -I../BATS/include -I../include
+IFLAGS = -I../../BATS/include -I../include
 
 default: hello.out
 
