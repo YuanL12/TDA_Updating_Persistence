@@ -47,10 +47,10 @@ If you are interested in optimization with persistent homology, as mentioned in
 
 <table><tr>
 <td> <img src="demo/py/opt_rips_enc/orginal_dataset_rips.png" alt="Orginial Datasets" style="width: 250px;"/> <p align = "center">
-Fig.1 - 4K Mountains Wallpaper
+before
 </p> </td> 
 <td> <img src="demo/py/opt_rips_enc/optimized_dataset_rips.png" alt="Optimized Datasets" style="width: 250px;"/> <p align = "center">
-Fig.1 - 4K Mountains Wallpaper
+after
 </p> </td>
 </tr></table>
 
