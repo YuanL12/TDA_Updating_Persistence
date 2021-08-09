@@ -1,24 +1,61 @@
 # TDA_Updating_Persistence
-This is a project about updating_persistence mentored by Dr. Nelson
+This is a project about updating persistence mentored by Dr. Nelson.
 
 ## Setup
-If you want to run C++ files, please use for submodule
+If you want to run C++ files, please use the following command for cloning submodule as well (since BATS is a submodule)
 ```
 git clone --recursive git@github.com:YuanL12/TDA_Updating_Persistence.git
 ```
 
-If you only want to run python files, please follow the instruction in https://bnels.github.io/BATS.py/#/installation.
+If you only want to run python files, please follow the instruction in https://bnels.github.io/BATS.py/#/installation to install it (We recommend Linux OS).
 
 
 ## Get Started 
 ### Python
 The Python API in provided in BATS.py, which should be the easiest way to implement our functions.
-We recommend try on our .ipynb files in `ipynb/Rips Radius.ipynb` for Rips filtration and `ipynb/Optimizing Levelset.ipynb` for Levelset filtration.
+We recommend try on our .ipynb files in [ipynb/Rips Radius.ipynb](ipynb/Rips%20Radius.ipynb) for Rips filtration and [ipynb/Optimizing Levelset.ipynb](ipynb/Optimizing%20Levelset.ipynb) for Levelset filtration. 
+
+#### Compute PH
+In short, the general procedure to compute PH is
+```Python
+# generate a pair-wise distance matrix
+D = distance.squareform(distance.pdist(data))
+# generate a Rips filtration 
+# with the maximun dimension and maximum edge length of a Rips filtration. 
+F = bats.LightRipsFiltration(bats.Matrix(D), np.inf, 2)
+# compute with F2 coefficents
+R = bats.reduce(F, bats.F2())
+```
+The above PH computation takes 0.73 seconds, while  
+if we have another Filtration and hope to update persistence, then using 
+```Python
+# Consturct another Filtration with different data
+D2 = distance.squareform(distance.pdist(data2))
+F2 = bats.LightRipsFiltration(bats.Matrix(D2), np.inf, 2)
+
+# update persistence on old one
+update_info = bats.UpdateInfoLightFiltration(F, F2)
+R.update_filtration_general(update_info)
+```
+would take 0.28 seconds. You can also check [ipynb/Rips Radius.ipynb](ipynb/Rips%20Radius.ipynb)for detailed comparsion of time.
+
+#### Optimization with PH
+If you are interested in optimization with persistent homology, as mentioned in
+ **A Topology Layer for Machine Learning**, [arxiv:1905.12200](https://arxiv.org/abs/1905.12200)
+ first, we also provide a faster implementation with BATS.py in [demo/py/opt_rips_enc/opt_rips_enclosing_radius.py](demo/py/opt_rips_enc/opt_rips_enclosing_radius.py) and a combination with Pytorch in [develop/BATS_hole.ipynb](develop/BATS_hole.ipynb).
+
+
+<table><tr>
+<td> <img src="demo/py/opt_rips_enc/orginal_dataset_rips.png" alt="Orginial Datasets" style="width: 250px;"/> </td>
+<em>before</em>
+<td> <img src="demo/py/opt_rips_enc/optimized_dataset_rips.png" alt="Optimized Datasets" style="width: 250px;"/> </td>
+<em>after</em>
+</tr></table>
+
+{% include image.html url="/demo/py/opt_rips_enc/orginal_dataset_rips.png" description="before" %}
 
 ### C++
-#### Setup
-Since BATS is a submodule, you might need to 
-In order to see how to compute PH, go to `demo/cpp/persistence_demo.cpp`, and then 
+In order to see how to compute PH, go to [demo/cpp/persistence_demo.cpp](demo/cpp/persistence_demo.cpp), and then 
 ```Terminal
 make persistence_demo.out
 ```
@@ -28,7 +65,7 @@ make persistence_demo.out
 ./persistence_demo.out
 ```
 
-If you want to update on Rips Filtration then go to `demo/cpp/update_rips.cpp` and lower star Filtration in `demo/cpp/update_lower_star.cpp`.
+If you want to update on Rips Filtration then go to [demo/cpp/update_rips.cpp](demo/cpp/update_rips.cpp) and lower star Filtration in [demo/cpp/update_lower_star.cpp](demo/cpp/update_rips.cpp).
 
 ### datasets
 We appreciate the datasets provided on the internet, but due the file sizes, we are unable to upload them fully on Github. We list the sources of them below, if you want to try on real-world datasets:
@@ -38,10 +75,10 @@ We appreciate the datasets provided on the internet, but due the file sizes, we 
 3. Datasets used in `A Roadmap for the Computation of Persistent Homology': https://github.com/n-otter/PH-roadmap/tree/master/data_sets (Otter, N., Porter, M. A., Tillmann, U., Grindrod, P., and Harrington, H. A. A roadmap for the computation of p ersistent homology. EPJ Data Science 6, 1 (2017))
 
 ## BATS(C++) Introduction
-BATS is a git submodule, which includes C++ implementations of computational topology. If you want to develop it or have a deep understand of it, then read this section. For an algorithm analysis of reduction algorithm, you can see `demo/cpp/intro.md`.
+BATS is a git submodule, which includes C++ implementations of computational topology. Since BATS.py only provides an API with functions defined in C++, if you want to develop it or have a deep understand of it, then read this section. For an algorithm analysis of reduction algorithm, you can see [demo/cpp/intro.md](demo/cpp/intro.md).
 
 ### Matrix (Optional)
-In order to create a matrix, go to `demo/cpp/matrix_demo.cpp` to see the implementation of matrices.
+In order to create a matrix, go to [demo/cpp/matrix_demo.cpp](demo/cpp/matrix_demo.cpp) to see the implementation of matrices.
 
 
 ### Persistence homology
@@ -77,7 +114,7 @@ persistence pair at dim 1
 ```
 Each line is an n-dimensional persistence pair in the format of 
 ```
-<dimension> : (<birth_filtration_value>, <death_filtration_value>) <birth_index_of_n_simplex, death_index_n_plus_1_simplex>
+<homology dimension> : (<birth filtration value>, <death filtration value>) <birth index of n-simplex, death index of (n+1)-simplex>
 ```
 , where birth_index and death_index are generally the index of a simplex at dimension k(creates the homology) and the index of a simplex at dimension k+1(destroies the homology). 
 
@@ -100,7 +137,7 @@ i.e., updating R by
 ```
 
 #### General filtration
-If the complex of a filtration has been sorted by its filration values (which is the normal case), then, as shown in `demo/cpp/update_rips.cpp`,
+If the complex of a filtration has been sorted by its filration values (which is the normal case), then, as shown in [demo/cpp/update_rips.cpp](demo/cpp/update_rips.cpp),
 
 ```C++
 // update Filtered Chain Complex
