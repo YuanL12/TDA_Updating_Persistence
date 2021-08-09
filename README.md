@@ -46,13 +46,13 @@ If you are interested in optimization with persistent homology, as mentioned in
 
 
 <table><tr>
-<td> <img src="demo/py/opt_rips_enc/orginal_dataset_rips.png" alt="Orginial Datasets" style="width: 250px;"/> </td>
-<em>before</em>
-<td> <img src="demo/py/opt_rips_enc/optimized_dataset_rips.png" alt="Optimized Datasets" style="width: 250px;"/> </td>
-<em>after</em>
+<td> <img src="demo/py/opt_rips_enc/orginal_dataset_rips.png" alt="Orginial Datasets" style="width: 250px;"/> <p align = "center">
+Fig.1 - 4K Mountains Wallpaper
+</p> </td> 
+<td> <img src="demo/py/opt_rips_enc/optimized_dataset_rips.png" alt="Optimized Datasets" style="width: 250px;"/> <p align = "center">
+Fig.1 - 4K Mountains Wallpaper
+</p> </td>
 </tr></table>
-
-{% include image.html url="/demo/py/opt_rips_enc/orginal_dataset_rips.png" description="before" %}
 
 ### C++
 In order to see how to compute PH, go to [demo/cpp/persistence_demo.cpp](demo/cpp/persistence_demo.cpp), and then 
