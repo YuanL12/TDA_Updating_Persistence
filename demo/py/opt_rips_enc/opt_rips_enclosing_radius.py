@@ -9,6 +9,7 @@ X = np.random.uniform(0,1,(n,2))
 # X = X / np.linalg.norm(X, axis=1).reshape(-1,1)
 # X = X + np.random.normal(size=(n,2), scale = 0.1 )
 fig1 = plt.scatter(X[:,0], X[:,1])
+fig1.axes.set_aspect('equal')
 plt.savefig('orginal_dataset_rips.png')
 plt.clf()
 
