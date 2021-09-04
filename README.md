@@ -54,6 +54,10 @@ after
 </p> </td>
 </tr></table>
 
+There is also an gif to show the optimization process:
+![opt_rips](develop/movie.gif)
+
+
 ### C++
 In order to see how to compute PH, go to [demo/cpp/persistence_demo.cpp](demo/cpp/persistence_demo.cpp), and then 
 ```Terminal
