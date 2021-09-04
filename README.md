@@ -54,7 +54,7 @@ after
 </p> </td>
 </tr></table>
 
-There is also an gif to show the optimization process:
+There is also a gif to show the optimization process:
 ![opt_rips](develop/movie.gif)
 
 
