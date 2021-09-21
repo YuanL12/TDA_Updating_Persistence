@@ -7,7 +7,7 @@ If you want to run C++ files, please use the following command for cloning submo
 git clone --recursive git@github.com:YuanL12/TDA_Updating_Persistence.git
 ```
 
-If you only want to run python files, please follow the instruction in https://bnels.github.io/BATS.py/#/installation to install it (We recommend Linux OS).
+If you only want to run python files, please follow the instruction in https://bats-tda.readthedocs.io/en/latest/installation.html to install it (We recommend Linux OS).
 
 
 ## Get Started 
