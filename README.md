@@ -1,5 +1,5 @@
-# TDA_Updating_Persistence
-This is a project about updating persistence mentored by Dr. Nelson.
+# TDA Updating Persistence
+This is a project about updating persistence mentored by Dr. Bradley Nelson. Here is the [pre-print](https://arxiv.org/abs/2108.05022).
 
 ## Setup
 If you want to run C++ files, please use the following command for cloning submodule as well (since BATS is a submodule)
