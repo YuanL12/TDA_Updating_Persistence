@@ -1,6 +1,9 @@
 # TDA Updating Persistence
 This is a project about updating persistence mentored by Dr. Bradley Nelson. Here is the [pre-print](https://arxiv.org/abs/2108.05022).
 
+## Overview
+Persistent homology is a topological feature used in a variety of applications such as generating features for data analysis and penalizing optimization problems. We develop an approach to accelerate persistent homology computations performed on many similar filtered topological spaces which is based on updating associated matrix factorizations. Our approach improves the update scheme of Cohen-Steiner, Edelsbrunner, and Morozov for permutations by additionally handling addition and deletion of cells in a filtered topological space and by processing changes in a single batch. We show that the complexity of our scheme scales with the number of elementary changes to the filtration which as a result is often less expensive than the full persistent homology computation. Finally, we perform computational experiments demonstrating practical speedups in several situations including feature generation and optimization guided by persistent homology.
+
 ## Setup
 If you want to run C++ files, please use the following command for cloning submodule as well (since BATS is a submodule)
 ```
