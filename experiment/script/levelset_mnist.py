@@ -12,324 +12,349 @@ import ripser
 
 from keras.datasets import mnist
 
-(train_X, train_y), (test_X, test_y) = mnist.load_data()
-print('X_train: ' + str(train_X.shape))
-print('Y_train: ' + str(train_y.shape))
-print('X_test:  '  + str(test_X.shape))
-print('Y_test:  '  + str(test_y.shape))
+def run_all():
 
-img = train_X[0]
-img = 255 - img
+    times = dict()
 
-m, n = img.shape
-X = freudenthal_grid_light(m, n)
+    (train_X, train_y), (test_X, test_y) = mnist.load_data()
+    print('X_train: ' + str(train_X.shape))
+    print('Y_train: ' + str(train_y.shape))
+    print('X_test:  '  + str(test_X.shape))
+    print('Y_test:  '  + str(test_y.shape))
 
-t0 = time.monotonic()
-vals, imap = bats.lower_star_filtration(X, img.flatten())
-t1 = time.monotonic()
-print("time to extend: {} sec.".format(t1 - t0))
+    img = train_X[0]
+    img = 255 - img
 
-t0 = time.monotonic()
-F = bats.FilteredLightSimplicialComplex(X, vals)
-t1 = time.monotonic()
-print("time to construct: {} sec.".format(t1 - t0))
-
-t0 = time.monotonic()
-R = bats.reduce(F, bats.F2())
-t1 = time.monotonic()
-print("time to reduce: {} sec.".format(t1 - t0))
-
-ps = R.persistence_pairs(0, False) +  R.persistence_pairs(1, False)
-for p in ps:
-    if p.length() > 0:
-        print(p)
-
-N = 1000
-data = train_X[:N]
-
-flags = [
-    (),
-    (bats.standard_reduction_flag(),),
-    (bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag()),
-    (bats.standard_reduction_flag(), bats.clearing_flag()),
-    (bats.standard_reduction_flag(), bats.compression_flag()),
-]
-labels = [
-    "standard w/ basis",
-    "standard w/ no basis",
-    "clearing w/ basis",
-    "clearing w/ no basis",
-    "compression w/ no basis",
-]
-
-for flag, label in zip(flags, labels):
-
-    text = []
-    tcon = []
-    tred = []
+    m, n = img.shape
     X = freudenthal_grid_light(m, n)
-    for img in tqdm(data):
-        irev = 255 - img
-
-        t0 = time.monotonic()
-        vals, imap = bats.lower_star_filtration(X, irev.flatten())
-        t1 = time.monotonic()
-        text.append(t1 - t0)
-
-        t0 = time.monotonic()
-        F = bats.FilteredLightSimplicialComplex(X, vals)
-        t1 = time.monotonic()
-        tcon.append(t1 - t0)
-
-        t0 = time.monotonic()
-        R = bats.reduce(F, bats.F2(), *flag)
-        t1 = time.monotonic()
-        tred.append(t1 - t0)
-
-    print("\n\nBATS freudenthal {}".format(label))
-    print("extension: {} sec.".format(np.mean(text)))
-    print("construction: {} sec.".format(np.mean(tcon)))
-    print("tred: {} sec.".format(np.mean(tred)))
-    print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
-
-    text = []
-    tcon = []
-    tred = []
-
-    X = cubical_grid(m,n)
-    for img in tqdm(data):
-        irev = 255-img
-
-        t0 = time.monotonic()
-        vals = bats.lower_star_filtration(X, irev)
-        t1 = time.monotonic()
-        text.append(t1 - t0)
-
-        t0 = time.monotonic()
-        F = bats.FilteredCubicalComplex(X, vals)
-        t1 = time.monotonic()
-        tcon.append(t1 - t0)
-
-        t0 = time.monotonic()
-        R = bats.reduce(F, bats.F2(), *flag)
-        t1 = time.monotonic()
-        tred.append(t1 - t0)
-
-    print("\n\nBATS cubical {}".format(label))
-    print("extension: {} sec.".format(np.mean(text)))
-    print("construction: {} sec.".format(np.mean(tcon)))
-    print("tred: {} sec.".format(np.mean(tred)))
-    print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
-
-
-
-def bats_update_time(aimg, data, *flags):
-
-    X = freudenthal_grid_light(m, n)
-    text = []
-    tupd = []
-
-    # initialize on average image
-    irev = 255-aimg
-    vals, imap = bats.lower_star_filtration(X, irev.flatten())
-    F = bats.FilteredLightSimplicialComplex(X, vals)
-    R = bats.reduce(F, bats.F2(), *flags)
-
-    for img in tqdm(data):
-        irev = 255-img
-        R = bats.reduce(F, bats.F2()) # reduce from scratch
-
-        t0 = time.monotonic()
-        vals, imap = bats.lower_star_filtration(X, irev.flatten())
-        t1 = time.monotonic()
-        text.append(t1 - t0)
-
-        t0 = time.monotonic()
-        R.update_filtration(vals)
-        t1 = time.monotonic()
-        tupd.append(t1 - t0)
-
-    print("extension: {} sec.".format(np.mean(text)))
-    print("update: {} sec.".format(np.mean(tupd)))
-    print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
-
-
-
-
-print("\n\nBATS update average image:")
-aimg = np.mean(data, axis=0)
-bats_update_time(aimg, data)
-print("\nwith clearing basis:")
-bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-print("\n\nBATS update zero image:")
-aimg = np.zeros((28,28))
-bats_update_time(aimg, data)
-print("\nwith clearing basis:")
-bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-
-print("\n\nBATS update random image:")
-aimg = np.random.rand(28,28)*255
-bats_update_time(aimg, data)
-print("\nwith clearing basis:")
-bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-
-print("\n\nBATS update selected image:")
-aimg = aimg = data[5]
-bats_update_time(aimg, data)
-print("\nwith clearing basis:")
-bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-
-
-
-
-def time_BATS_cube(aimg, data, *flags):
-
-    text = []
-    tupd = []
-
-    m, n = aimg.shape
-    X = cubical_grid(m,n)
-
-    # initialize on average image
-    irev = 255-aimg
-    vals = bats.lower_star_filtration(X, irev)
-    F = bats.FilteredCubicalComplex(X, vals)
-    R = bats.reduce(F, bats.F2(), *flags)
-
-    for img in tqdm(data):
-        irev = 255-img
-        R = bats.reduce(F, bats.F2()) # reduce from scratch
-
-        t0 = time.monotonic()
-        vals = bats.lower_star_filtration(X, irev)
-        t1 = time.monotonic()
-        text.append(t1 - t0)
-
-        t0 = time.monotonic()
-        R.update_filtration(vals)
-        t1 = time.monotonic()
-        tupd.append(t1 - t0)
-
-    print("extension: {} sec.".format(np.mean(text)))
-    print("update: {} sec.".format(np.mean(tupd)))
-    print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
-
-print("\n\nBATS cubical average image:")
-time_BATS_cube(aimg, data)
-print("\nwith clearing basis:")
-time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-print("\n\nBATS cubical average image:")
-aimg = np.mean(data, axis=0)
-time_BATS_cube(aimg, data)
-print("\nwith clearing basis:")
-time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-print("\n\nBATS cubical random image:")
-aimg = np.random.rand(28,28)*255
-bats_update_time(aimg, data)
-print("\nwith clearing basis:")
-time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-print("\n\nBATS cubical selected image:")
-aimg = aimg = data[5]
-bats_update_time(aimg, data)
-print("\nwith clearing basis:")
-time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
-
-
-print("\n\ndionysus")
-def time_dionysus(data):
-
-    tdion = []
-    for img in data:
-        irev = 255.0 - img
-        t0 = time.monotonic()
-        f_lower_star = dion.fill_freudenthal(irev)
-        p = dion.homology_persistence(f_lower_star)
-        dgms = dion.init_diagrams(p, f_lower_star)
-        t1 = time.monotonic()
-        tdion.append(t1 - t0)
-
-    return tdion
-
-tdion = time_dionysus(data)
-print("dion avg: {} sec.".format(np.mean(tdion)))
-
-print("\n\nGudhi")
-def construct_gudhi_simplex_tree(img):
-    # create in BATS to dump
-    X = freudenthal_grid_light(*img.shape)
-    vals, imap = bats.lower_star_filtration(X, img.flatten())
-    F = bats.FilteredLightSimplicialComplex(X, vals)
 
     t0 = time.monotonic()
-    GT = gd.SimplexTree()
-    for k in range(F.maxdim() + 1):
-        for s, v in zip(X.get_simplices(k), F.vals(k)):
-            GT.insert(s, v)
+    vals, imap = bats.lower_star_filtration(X, img.flatten())
     t1 = time.monotonic()
-    return GT, t1 - t0
+    print("time to extend: {} sec.".format(t1 - t0))
 
-def time_gudhi(data):
+    t0 = time.monotonic()
+    F = bats.FilteredLightSimplicialComplex(X, vals)
+    t1 = time.monotonic()
+    print("time to construct: {} sec.".format(t1 - t0))
 
-    tgd = []
+    t0 = time.monotonic()
+    R = bats.reduce(F, bats.F2())
+    t1 = time.monotonic()
+    print("time to reduce: {} sec.".format(t1 - t0))
 
-    for img in data:
-        irev = 255.0 - img
+    ps = R.persistence_pairs(0, False) +  R.persistence_pairs(1, False)
+    for p in ps:
+        if p.length() > 0:
+            print(p)
 
-        GT, tcon = construct_gudhi_simplex_tree(irev)
+    N = 1000
+    data = train_X[:N]
+
+    flags = [
+        (),
+        (bats.standard_reduction_flag(),),
+        (bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag()),
+        (bats.standard_reduction_flag(), bats.clearing_flag()),
+        (bats.standard_reduction_flag(), bats.compression_flag()),
+    ]
+    labels = [
+        "standard w/ basis",
+        "standard w/ no basis",
+        "clearing w/ basis",
+        "clearing w/ no basis",
+        "compression w/ no basis",
+    ]
+    short_labels = [
+        "BATS",
+        "BATS(nb)",
+        "BATS(cl)",
+        "BATS(clb)",
+        "BATS(co)"
+    ]
+
+    for flag, label, sl in zip(flags, labels, short_labels):
+
+        text = []
+        tcon = []
+        tred = []
+        X = freudenthal_grid_light(m, n)
+        for img in tqdm(data):
+            irev = 255 - img
+
+            t0 = time.monotonic()
+            vals, imap = bats.lower_star_filtration(X, irev.flatten())
+            t1 = time.monotonic()
+            text.append(t1 - t0)
+
+            t0 = time.monotonic()
+            F = bats.FilteredLightSimplicialComplex(X, vals)
+            t1 = time.monotonic()
+            tcon.append(t1 - t0)
+
+            t0 = time.monotonic()
+            R = bats.reduce(F, bats.F2(), *flag)
+            t1 = time.monotonic()
+            tred.append(t1 - t0)
+
+        print("\n\nBATS freudenthal {}".format(label))
+        print("extension: {} sec.".format(np.mean(text)))
+        print("construction: {} sec.".format(np.mean(tcon)))
+        print("tred: {} sec.".format(np.mean(tred)))
+        print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
+        times[sl + 'f'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
+
+        text = []
+        tcon = []
+        tred = []
+
+        X = cubical_grid(m,n)
+        for img in tqdm(data):
+            irev = 255-img
+
+            t0 = time.monotonic()
+            vals = bats.lower_star_filtration(X, irev)
+            t1 = time.monotonic()
+            text.append(t1 - t0)
+
+            t0 = time.monotonic()
+            F = bats.FilteredCubicalComplex(X, vals)
+            t1 = time.monotonic()
+            tcon.append(t1 - t0)
+
+            t0 = time.monotonic()
+            R = bats.reduce(F, bats.F2(), *flag)
+            t1 = time.monotonic()
+            tred.append(t1 - t0)
+
+        print("\n\nBATS cubical {}".format(label))
+        print("extension: {} sec.".format(np.mean(text)))
+        print("construction: {} sec.".format(np.mean(tcon)))
+        print("tred: {} sec.".format(np.mean(tred)))
+        print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
+        times[sl + 'c'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
+
+
+
+    def bats_update_time(aimg, data, *flags):
+
+        X = freudenthal_grid_light(m, n)
+        text = []
+        tupd = []
+
+        # initialize on average image
+        irev = 255-aimg
+        vals, imap = bats.lower_star_filtration(X, irev.flatten())
+        F = bats.FilteredLightSimplicialComplex(X, vals)
+        R = bats.reduce(F, bats.F2(), *flags)
+
+        for img in tqdm(data):
+            irev = 255-img
+            R = bats.reduce(F, bats.F2()) # reduce from scratch
+
+            t0 = time.monotonic()
+            vals, imap = bats.lower_star_filtration(X, irev.flatten())
+            t1 = time.monotonic()
+            text.append(t1 - t0)
+
+            t0 = time.monotonic()
+            R.update_filtration(vals)
+            t1 = time.monotonic()
+            tupd.append(t1 - t0)
+
+        print("extension: {} sec.".format(np.mean(text)))
+        print("update: {} sec.".format(np.mean(tupd)))
+        print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
+        return np.mean(text) + np.mean(tupd)
+
+
+
+    print("\n\nBATS update average image:")
+    aimg = np.mean(data, axis=0)
+    times["BATS(u) avg"] = bats_update_time(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl) avg"] = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+    print("\n\nBATS update zero image:")
+    aimg = np.zeros((28,28))
+    times["BATS(u) 0"] = bats_update_time(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl) 0"] = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+
+    print("\n\nBATS update random image:")
+    aimg = np.random.rand(28,28)*255
+    times["BATS(u) rnd"] = bats_update_time(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl) rnd"] = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+
+    print("\n\nBATS update selected image:")
+    aimg = aimg = data[5]
+    times["BATS(u) img"] = bats_update_time(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl) img"] = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+
+
+
+
+    def time_BATS_cube(aimg, data, *flags):
+
+        text = []
+        tupd = []
+
+        m, n = aimg.shape
+        X = cubical_grid(m,n)
+
+        # initialize on average image
+        irev = 255-aimg
+        vals = bats.lower_star_filtration(X, irev)
+        F = bats.FilteredCubicalComplex(X, vals)
+        R = bats.reduce(F, bats.F2(), *flags)
+
+        for img in tqdm(data):
+            irev = 255-img
+            R = bats.reduce(F, bats.F2()) # reduce from scratch
+
+            t0 = time.monotonic()
+            vals = bats.lower_star_filtration(X, irev)
+            t1 = time.monotonic()
+            text.append(t1 - t0)
+
+            t0 = time.monotonic()
+            R.update_filtration(vals)
+            t1 = time.monotonic()
+            tupd.append(t1 - t0)
+
+        print("extension: {} sec.".format(np.mean(text)))
+        print("update: {} sec.".format(np.mean(tupd)))
+        print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
+        return np.mean(text) + np.mean(tupd)
+
+    print("\n\nBATS cubical average image:")
+    times["BATS(u)c avg"] = time_BATS_cube(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl)c avg"] = time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+    print("\n\nBATS cubical average image:")
+    aimg = np.mean(data, axis=0)
+    times["BATS(u)c 0"] = time_BATS_cube(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl) 0"] = time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+    print("\n\nBATS cubical random image:")
+    aimg = np.random.rand(28,28)*255
+    times["BATS(u)c rnd"] = time_BATS_cube(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl) rnd"] = time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+    print("\n\nBATS cubical selected image:")
+    aimg = aimg = data[5]
+    times["BATS(u)c img"] = time_BATS_cube(aimg, data)
+    print("\nwith clearing basis:")
+    times["BATS(u,cl) img"] = time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
+
+    print("\n\ndionysus")
+    def time_dionysus(data):
+
+        tdion = []
+        for img in data:
+            irev = 255.0 - img
+            t0 = time.monotonic()
+            f_lower_star = dion.fill_freudenthal(irev)
+            p = dion.homology_persistence(f_lower_star)
+            dgms = dion.init_diagrams(p, f_lower_star)
+            t1 = time.monotonic()
+            tdion.append(t1 - t0)
+
+        return tdion
+
+    tdion = time_dionysus(data)
+    print("dion avg: {} sec.".format(np.mean(tdion)))
+    times['dion'] = np.mean(tdion)
+
+    print("\n\nGudhi")
+    def construct_gudhi_simplex_tree(img):
+        # create in BATS to dump
+        X = freudenthal_grid_light(*img.shape)
+        vals, imap = bats.lower_star_filtration(X, img.flatten())
+        F = bats.FilteredLightSimplicialComplex(X, vals)
 
         t0 = time.monotonic()
-        diag = GT.persistence()
+        GT = gd.SimplexTree()
+        for k in range(F.maxdim() + 1):
+            for s, v in zip(X.get_simplices(k), F.vals(k)):
+                GT.insert(s, v)
         t1 = time.monotonic()
-        tgd.append(tcon + (t1 - t0))
+        return GT, t1 - t0
 
-    return tgd
+    def time_gudhi(data):
 
-tgd = time_gudhi(data)
-print("gudhi avg: {} sec.".format(np.mean(tgd)))
+        tgd = []
 
-print("\n\nGudhi cubical")
-def time_gudhi_cubical(data):
+        for img in data:
+            irev = 255.0 - img
 
-    tgd = []
+            GT, tcon = construct_gudhi_simplex_tree(irev)
 
-    for img in data:
-        irev = 255.0 - img
-        t0 = time.monotonic()
-        cc = gd.CubicalComplex(
-            dimensions = list(img.shape),
-            top_dimensional_cells = img.flatten()
-        )
+            t0 = time.monotonic()
+            diag = GT.persistence()
+            t1 = time.monotonic()
+            tgd.append(tcon + (t1 - t0))
 
-        diag = cc.persistence()
-        t1 = time.monotonic()
-        tgd.append(t1 - t0)
+        return tgd
 
-    return tgd
+    tgd = time_gudhi(data)
+    print("gudhi avg: {} sec.".format(np.mean(tgd)))
+    times['gudhi(f)'] = np.mean(tgd)
 
-tgd = time_gudhi_cubical(data)
-print("gudhi avg: {} sec.".format(np.mean(tgd)))
+    print("\n\nGudhi cubical")
+    def time_gudhi_cubical(data):
+
+        tgd = []
+
+        for img in data:
+            irev = 255.0 - img
+            t0 = time.monotonic()
+            cc = gd.CubicalComplex(
+                dimensions = list(img.shape),
+                top_dimensional_cells = img.flatten()
+            )
+
+            diag = cc.persistence()
+            t1 = time.monotonic()
+            tgd.append(t1 - t0)
+
+        return tgd
+
+    tgd = time_gudhi_cubical(data)
+    print("gudhi avg: {} sec.".format(np.mean(tgd)))
+    times['gudhi(c)'] = np.mean(tgd)
 
 
-print("\n\nRipser lower star")
-def time_ripser(data):
+    print("\n\nRipser lower star")
+    def time_ripser(data):
 
-    trips = []
+        trips = []
 
-    for img in data:
-        irev = 255.0 - img
-        t0 = time.monotonic()
-        dgm = ripser.lower_star_img(img)
-        t1 = time.monotonic()
-        trips.append(t1 - t0)
+        for img in data:
+            irev = 255.0 - img
+            t0 = time.monotonic()
+            dgm = ripser.lower_star_img(img)
+            t1 = time.monotonic()
+            trips.append(t1 - t0)
 
-    return trips
+        return trips
 
-tripser = time_ripser(data)
-print("ripser avg: {} sec.".format(np.mean(tripser)))
+    tripser = time_ripser(data)
+    print("ripser avg: {} sec.".format(np.mean(tripser)))
+    times['ripser'] = np.mean(tripser)
+
+    return times
+
+
+if __name__ == "__main__":
+    times = run_all()
+    print(times)
