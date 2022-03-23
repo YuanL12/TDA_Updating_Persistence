@@ -1,12 +1,14 @@
 import bats
 import gudhi as gd
 import dionysus as dion
+import ripser
 import keras
 import matplotlib.pyplot as plt
 from freudenthal import *
 import time
 import numpy as np
 from tqdm import tqdm
+import ripser
 
 from keras.datasets import mnist
 
@@ -48,14 +50,16 @@ data = train_X[:N]
 flags = [
     (),
     (bats.standard_reduction_flag(),),
+    (bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag()),
     (bats.standard_reduction_flag(), bats.clearing_flag()),
     (bats.standard_reduction_flag(), bats.compression_flag()),
 ]
 labels = [
     "standard w/ basis",
     "standard w/ no basis",
-    "standard w/ clearing",
-    "standard w/ compression",
+    "clearing w/ basis",
+    "clearing w/ no basis",
+    "compression w/ no basis",
 ]
 
 for flag, label in zip(flags, labels):
@@ -66,7 +70,7 @@ for flag, label in zip(flags, labels):
     X = freudenthal_grid_light(m, n)
     for img in tqdm(data):
         irev = 255 - img
-        
+
         t0 = time.monotonic()
         vals, imap = bats.lower_star_filtration(X, irev.flatten())
         t1 = time.monotonic()
@@ -95,7 +99,7 @@ for flag, label in zip(flags, labels):
     X = cubical_grid(m,n)
     for img in tqdm(data):
         irev = 255-img
-        
+
         t0 = time.monotonic()
         vals = bats.lower_star_filtration(X, irev)
         t1 = time.monotonic()
@@ -119,22 +123,22 @@ for flag, label in zip(flags, labels):
 
 
 
-def bats_update_time(aimg, data):
+def bats_update_time(aimg, data, *flags):
 
     X = freudenthal_grid_light(m, n)
     text = []
     tupd = []
-    
+
     # initialize on average image
     irev = 255-aimg
     vals, imap = bats.lower_star_filtration(X, irev.flatten())
     F = bats.FilteredLightSimplicialComplex(X, vals)
-    R = bats.reduce(F, bats.F2())
+    R = bats.reduce(F, bats.F2(), *flags)
 
     for img in tqdm(data):
         irev = 255-img
         R = bats.reduce(F, bats.F2()) # reduce from scratch
-    
+
         t0 = time.monotonic()
         vals, imap = bats.lower_star_filtration(X, irev.flatten())
         t1 = time.monotonic()
@@ -151,27 +155,39 @@ def bats_update_time(aimg, data):
 
 
 
+
 print("\n\nBATS update average image:")
 aimg = np.mean(data, axis=0)
 bats_update_time(aimg, data)
+print("\nwith clearing basis:")
+bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 print("\n\nBATS update zero image:")
 aimg = np.zeros((28,28))
 bats_update_time(aimg, data)
+print("\nwith clearing basis:")
+bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
 
 print("\n\nBATS update random image:")
 aimg = np.random.rand(28,28)*255
 bats_update_time(aimg, data)
+print("\nwith clearing basis:")
+bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+
 
 print("\n\nBATS update selected image:")
 aimg = aimg = data[5]
 bats_update_time(aimg, data)
+print("\nwith clearing basis:")
+bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 
 
 
-def time_BATS_cube(aimg, data):
-    
+
+def time_BATS_cube(aimg, data, *flags):
+
     text = []
     tupd = []
 
@@ -182,12 +198,12 @@ def time_BATS_cube(aimg, data):
     irev = 255-aimg
     vals = bats.lower_star_filtration(X, irev)
     F = bats.FilteredCubicalComplex(X, vals)
-    R = bats.reduce(F, bats.F2())
+    R = bats.reduce(F, bats.F2(), *flags)
 
     for img in tqdm(data):
         irev = 255-img
         R = bats.reduce(F, bats.F2()) # reduce from scratch
-    
+
         t0 = time.monotonic()
         vals = bats.lower_star_filtration(X, irev)
         t1 = time.monotonic()
@@ -197,30 +213,38 @@ def time_BATS_cube(aimg, data):
         R.update_filtration(vals)
         t1 = time.monotonic()
         tupd.append(t1 - t0)
-    
+
     print("extension: {} sec.".format(np.mean(text)))
     print("update: {} sec.".format(np.mean(tupd)))
     print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
-    
+
 print("\n\nBATS cubical average image:")
 time_BATS_cube(aimg, data)
+print("\nwith clearing basis:")
+time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 print("\n\nBATS cubical average image:")
 aimg = np.mean(data, axis=0)
 time_BATS_cube(aimg, data)
+print("\nwith clearing basis:")
+time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 print("\n\nBATS cubical random image:")
 aimg = np.random.rand(28,28)*255
 bats_update_time(aimg, data)
+print("\nwith clearing basis:")
+time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 print("\n\nBATS cubical selected image:")
 aimg = aimg = data[5]
 bats_update_time(aimg, data)
+print("\nwith clearing basis:")
+time_BATS_cube(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 
 print("\n\ndionysus")
 def time_dionysus(data):
-    
+
     tdion = []
     for img in data:
         irev = 255.0 - img
@@ -230,9 +254,9 @@ def time_dionysus(data):
         dgms = dion.init_diagrams(p, f_lower_star)
         t1 = time.monotonic()
         tdion.append(t1 - t0)
-        
+
     return tdion
-        
+
 tdion = time_dionysus(data)
 print("dion avg: {} sec.".format(np.mean(tdion)))
 
@@ -242,7 +266,7 @@ def construct_gudhi_simplex_tree(img):
     X = freudenthal_grid_light(*img.shape)
     vals, imap = bats.lower_star_filtration(X, img.flatten())
     F = bats.FilteredLightSimplicialComplex(X, vals)
-    
+
     t0 = time.monotonic()
     GT = gd.SimplexTree()
     for k in range(F.maxdim() + 1):
@@ -252,19 +276,19 @@ def construct_gudhi_simplex_tree(img):
     return GT, t1 - t0
 
 def time_gudhi(data):
-    
+
     tgd = []
-    
+
     for img in data:
         irev = 255.0 - img
-        
+
         GT, tcon = construct_gudhi_simplex_tree(irev)
-        
+
         t0 = time.monotonic()
         diag = GT.persistence()
         t1 = time.monotonic()
         tgd.append(tcon + (t1 - t0))
-        
+
     return tgd
 
 tgd = time_gudhi(data)
@@ -272,22 +296,40 @@ print("gudhi avg: {} sec.".format(np.mean(tgd)))
 
 print("\n\nGudhi cubical")
 def time_gudhi_cubical(data):
-    
+
     tgd = []
-    
+
     for img in data:
         irev = 255.0 - img
         t0 = time.monotonic()
         cc = gd.CubicalComplex(
-            dimensions = list(img.shape), 
+            dimensions = list(img.shape),
             top_dimensional_cells = img.flatten()
         )
 
         diag = cc.persistence()
         t1 = time.monotonic()
         tgd.append(t1 - t0)
-        
+
     return tgd
 
 tgd = time_gudhi_cubical(data)
 print("gudhi avg: {} sec.".format(np.mean(tgd)))
+
+
+print("\n\nRipser lower star")
+def time_ripser(data):
+
+    trips = []
+
+    for img in data:
+        irev = 255.0 - img
+        t0 = time.monotonic()
+        dgm = ripser.lower_star_img(img)
+        t1 = time.monotonic()
+        trips.append(t1 - t0)
+
+    return trips
+
+tripser = time_ripser(data)
+print("ripser avg: {} sec.".format(np.mean(tripser)))

@@ -27,7 +27,7 @@ def construct_gudhi_simplex_tree(img):
     X = levelset_cube_light(*img.shape)
     vals, imap = bats.lower_star_filtration(X, img.flatten())
     F = bats.FilteredLightSimplicialComplex(X, vals)
-    
+
     t0 = time.monotonic()
     GT = gd.SimplexTree()
     for k in range(F.maxdim() + 1):
@@ -37,13 +37,13 @@ def construct_gudhi_simplex_tree(img):
     return GT, t1 - t0
 
 def time_gudhi(img):
-        
+
     GT, tcon = construct_gudhi_simplex_tree(img)
-    
+
     t0 = time.monotonic()
     diag = GT.persistence()
     t1 = time.monotonic()
-        
+
     return t1 - t0 + tcon
 
 tgd = time_gudhi(img2)
@@ -69,7 +69,7 @@ print("gudhi avg: {} sec.".format(np.mean(tgd)))
 
 print("\n\ndionysus")
 def time_dionysus(img):
-    
+
     tdion = []
     t0 = time.monotonic()
     f_lower_star = dion.fill_freudenthal(img)
@@ -77,42 +77,42 @@ def time_dionysus(img):
     dgms = dion.init_diagrams(p, f_lower_star)
     t1 = time.monotonic()
     tdion.append(t1 - t0)
-    
+
     return t1 - t0
-        
+
 tdion = time_dionysus(img2)
 print("dion avg: {} sec.".format(np.mean(tdion)))
 
-def time_BATS_update_light_3D(img, img2):
-    
+def time_BATS_update_light_3D(img, img2, *flags):
+
     dims = img.shape
     X = levelset_cube_light(*dims)
-    
+
     t0 = time.monotonic()
     vals, imap = bats.lower_star_filtration(X, img.flatten())
     t1 = time.monotonic()
     print("time to extend: {} sec.".format(t1 - t0))
-    
+
     t0 = time.monotonic()
     F = bats.FilteredLightSimplicialComplex(X, vals)
     t1 = time.monotonic()
     print("time to construct: {} sec.".format(t1 - t0))
-    
+
     t0 = time.monotonic()
-    R = bats.reduce(F, bats.F2())
+    R = bats.reduce(F, bats.F2(), *flags)
     t1 = time.monotonic()
     print("time to reduce: {} sec.".format(t1 - t0))
-    
+
     t0 = time.monotonic()
     vals, imap = bats.lower_star_filtration(X, img2.flatten())
     R.update_filtration(vals)
     t1 = time.monotonic()
     print("time to update: {} sec.".format(t1 - t0))
-    
+
     t0 = time.monotonic()
     vals, imap = bats.lower_star_filtration(X, img2.flatten())
     F = bats.FilteredLightSimplicialComplex(X, vals)
-    R = bats.reduce(F, bats.F2())
+    R = bats.reduce(F, bats.F2(), *flags)
     t1 = time.monotonic()
     print("img2 from scratch: {} sec.".format(t1 - t0))
 
@@ -122,4 +122,10 @@ print("\nBATS:")
 time_BATS_update_light_3D(
     img,
     img2
+)
+print("\nwith clearing")
+time_BATS_update_light_3D(
+    img,
+    img2,
+	bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag()
 )
