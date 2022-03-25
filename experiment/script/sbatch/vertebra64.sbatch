@@ -12,6 +12,6 @@
 module load python
 
 conda init --all
-source /home/yuanluo/.bashrc
-conda activate /home/yuanluo/.conda/envs/bats
-python vertebra64.py
+conda activate tda
+
+python ../vertebra64.py

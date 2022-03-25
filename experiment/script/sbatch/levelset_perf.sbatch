@@ -12,8 +12,8 @@
 
 module load python
 conda init --all
-conda activate bats
+conda activate tda
 
 # use time to get memory use information
 # /usr/bin/time -v python levelset_3d.py
-python levelset_perf.py
+python ../levelset_perf.py

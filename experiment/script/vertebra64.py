@@ -20,7 +20,7 @@ def run_all():
     dims = (512, 512, 512)
 
     # load vertebra data
-    A = np.fromfile('/project/bradnelson/yuan/levelset/data/vertebra8.raw', dtype=np.int8)
+    A = np.fromfile('/project/bradnelson/update_persistence/levelset/data/vertebra8.raw', dtype=np.int8)
     A = A.reshape(dims)
     img = A[::8,::8,::8] # (each dimension is 512/8 = 64)
 
@@ -38,13 +38,13 @@ def run_all():
         vals, imap = bats.lower_star_filtration(X, img.flatten())
         F = bats.FilteredLightSimplicialComplex(X, vals)
 
-    t0 = time.monotonic()
-    GT = gd.SimplexTree()
-    for k in range(F.maxdim() + 1):
-        for s, v in zip(X.get_simplices(k), F.vals(k)):
-            GT.insert(s, v)
-    t1 = time.monotonic()
-    return GT, t1 - t0
+        t0 = time.monotonic()
+        GT = gd.SimplexTree()
+        for k in range(F.maxdim() + 1):
+            for s, v in zip(X.get_simplices(k), F.vals(k)):
+                GT.insert(s, v)
+        t1 = time.monotonic()
+        return GT, t1 - t0
 
     def time_gudhi(img):
 
@@ -158,4 +158,4 @@ def run_all():
 
 if __name__ == "__main__":
     times = run_all()
-	print(times)
+    print(times)
