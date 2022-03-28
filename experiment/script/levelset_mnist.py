@@ -21,6 +21,11 @@ def run_all():
     times[lstr] = dict()
     times[lstr]['Freudenthal'] = dict()
     times[lstr]['Cubical'] = dict()
+    times['full'] = dict()
+    times['img'] = dict() # selected image init
+    times['avg'] = dict() # avg init
+    times['zero'] = dict() # zero init
+    times['rnd'] = dict() # random init
 
 
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
@@ -112,8 +117,12 @@ def run_all():
     print("construction: {} sec.".format(np.mean(tcon)))
     print("tred: {} sec.".format(np.mean(tred)))
     print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
-    times[sl + 'f'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
+    # times[sl + 'f'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
     times[lstr]['Freudenthal']['BATS(c)'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
+    times['full']['extension'] = np.mean(text)
+    times['full']['construction'] = np.mean(tcon)
+    times['full']['reduction'] = np.mean(tred)
+    times['full']['total'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
 
     text = []
     tcon = []
@@ -143,9 +152,8 @@ def run_all():
     print("construction: {} sec.".format(np.mean(tcon)))
     print("tred: {} sec.".format(np.mean(tred)))
     print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
-    times[sl + 'c'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
+    # times[sl + 'c'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
     times[lstr]['Cubical']['BATS(c)'] = np.mean(text) + np.mean(tcon) + np.mean(tred)
-
 
     def bats_update_time(aimg, data, *flags):
 
@@ -182,38 +190,60 @@ def run_all():
         print("update: {} sec.".format(np.mean(tupd)))
         print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
         print("avg kt: {}".format(np.mean(ktds)))
-        return np.mean(text) + np.mean(tupd), np.mean(ktds)
+        return np.mean(text), np.mean(tupd), np.mean(ktds)
 
 
 
     print("\n\nBATS update average image:")
+    key = 'avg'
     aimg = np.mean(data, axis=0)
-    times["BATS(u) avg"], times['kt avg'] = bats_update_time(aimg, data)
+    tex, tup, dk = bats_update_time(aimg, data)
+    times[key]['extension'] = tex
+    times[key]['update'] = tup
+    times[key]['total'] = tup + tex
+    times[key]['dK'] = dk
     print("\nwith clearing basis:")
-    times["BATS(u,cl) avg"], _ = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+    tex, tup, dk = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
     print("\n\nBATS update zero image:")
+    key = 'zero'
     aimg = np.zeros((28,28))
-    times["BATS(u) 0"], times['kt 0']= bats_update_time(aimg, data)
+    tex, tup, dk = bats_update_time(aimg, data)
+    times[key]['extension'] = tex
+    times[key]['update'] = tup
+    times[key]['total'] = tup + tex
+    times[key]['dK'] = dk
     print("\nwith clearing basis:")
-    times["BATS(u,cl) 0"], _ = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+    bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 
     print("\n\nBATS update random image:")
+    key = 'rnd'
+    np.random.seed(0)
     aimg = np.random.rand(28,28)*255
-    times["BATS(u) rnd"], times['kt rnd'] = bats_update_time(aimg, data)
+    tex, tup, dk = bats_update_time(aimg, data)
+    times[key]['extension'] = tex
+    times[key]['update'] = tup
+    times[key]['total'] = tup + tex
+    times[key]['dK'] = dk
     print("\nwith clearing basis:")
-    times["BATS(u,cl) rnd"], _ = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+    bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
 
 
     print("\n\nBATS update selected image:")
+    key = 'img'
     aimg = aimg = data[5]
-    times["BATS(u) img"], times['kt img'] = bats_update_time(aimg, data)
-    print("\nwith clearing basis:")
-    times["BATS(u,cl) img"], _ = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+    tex, tup, dk = bats_update_time(aimg, data)
+    times[key]['extension'] = tex
+    times[key]['update'] = tup
+    times[key]['total'] = tup + tex
+    times[key]['dK'] = dk
+    times[lstr]['Freudenthal']['BATS(u,s)'] = tup + tex
+    times[lstr]['Freudenthal']['dK'] = dk
 
-    times[lstr]['Freudenthal']['BATS(u,s)'], times[lstr]['Freudenthal']['dK'] = bats_update_time(aimg, data)
-    times[lstr]['Freudenthal']['BATS(u,c)'], _ = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+    print("\nwith clearing basis:")
+    tex, tup, dk = bats_update_time(aimg, data, bats.standard_reduction_flag(), bats.clearing_flag(), bats.compute_basis_flag())
+    times[lstr]['Freudenthal']['BATS(u,c)'] = tex + tup
 
 
 
@@ -388,4 +418,49 @@ def run_all():
 
 if __name__ == "__main__":
     times = run_all()
+    # times = dict()
     print(times)
+
+    def latex_float(f):
+        if f == "--":
+            return f
+        float_str = "{0:.1e}".format(f)
+        if "e" in float_str:
+            base, exponent = float_str.split("e")
+            return r"${0} \times 10^{{{1}}}$".format(base, int(exponent))
+        else:
+            return float_str
+
+    def latex_dk(f):
+        if f == "--":
+            return f
+        float_str = "{0:.2g}".format(f)
+        if "e" in float_str:
+            base, exponent = float_str.split("e")
+            return r"${0} \times 10^{{{1}}}$".format(base, int(exponent))
+        else:
+            return float_str
+
+    def time_string(times, label, name):
+        str = "\n {}".format(name) + \
+        "\n& {}".format(latex_dk(times.get(label, dict()).get('dK', '--'))) + \
+        "\n& {}".format(latex_float(times.get(label, dict()).get('extension', '--'))) + \
+        "\n& {}".format(latex_float(times.get(label, dict()).get('construction', '--'))) + \
+        "\n& {}".format(latex_float(times.get(label, dict()).get('reduction', '--'))) + \
+        "\n& {}".format(latex_float(times.get(label, dict()).get('update', '--'))) + \
+        "\n& {}".format(latex_float(times.get(label, dict()).get('total', '--')))
+        return str
+
+    str = r"""
+\begin{tabular}{|c||c|c|c|c|c||c|}
+\hline
+&$d_K$& Extension & Build Filt. & Reduction & Update & Total\\
+\hline\hline""" +\
+    time_string(times, 'full', 'Full') + r"\\\hline" +\
+    time_string(times, 'img', 'Image init.') + r"\\\hline" +\
+    time_string(times, 'avg', 'Avg. init.') + r"\\\hline" +\
+    time_string(times, 'zero', 'Zero init.') + r"\\\hline" +\
+    time_string(times, 'rnd', 'Noise init.') + r"\\\hline" +\
+    "\n" + r"\end{tabular}"
+
+    print(str)
