@@ -32,31 +32,31 @@ dims2 = img.shape
 
 print("\n\nGudhi cubical")
 def time_gudhi_cubical(img):
-	irev = img
-	t0 = time.monotonic()
-	cc = gd.CubicalComplex(
-		dimensions = list(img.shape),
-		top_dimensional_cells = img.flatten()
-	)
-	diag = cc.persistence()
-	t1 = time.monotonic()
+    irev = img
+    t0 = time.monotonic()
+    cc = gd.CubicalComplex(
+        dimensions = list(img.shape),
+        top_dimensional_cells = img.flatten()
+    )
+    diag = cc.persistence()
+    t1 = time.monotonic()
 
-	return t1 - t0
+    return t1 - t0
 
 tgd = time_gudhi_cubical(img2)
 print("gudhi avg: {} sec.".format(np.mean(tgd)))
 
 flags = [
-	(),
-	(bats.standard_reduction_flag(),),
-	(bats.standard_reduction_flag(), bats.clearing_flag()),
-	(bats.standard_reduction_flag(), bats.compression_flag()),
+    (),
+    (bats.standard_reduction_flag(),),
+    (bats.standard_reduction_flag(), bats.clearing_flag()),
+    (bats.standard_reduction_flag(), bats.compression_flag()),
 ]
 labels = [
-	"standard w/ basis",
-	"standard w/ no basis",
-	"standard w/ clearing",
-	"standard w/ compression",
+    "standard w/ basis",
+    "standard w/ no basis",
+    "standard w/ clearing",
+    "standard w/ compression",
 ]
 
 t0 = time.monotonic()
@@ -67,57 +67,57 @@ print("time to construct cubical complex: {}".format(t1 - t0))
 for flag, label in zip(flags, labels):
 
 
-	text = []
-	tcon = []
-	tred = []
+    text = []
+    tcon = []
+    tred = []
 
-	
-	t0 = time.monotonic()
-	vals = bats.lower_star_filtration(X, img2)
-	t1 = time.monotonic()
-	text.append(t1 - t0)
 
-	t0 = time.monotonic()
-	F = bats.FilteredCubicalComplex(X, vals)
-	t1 = time.monotonic()
-	tcon.append(t1 - t0)
+    t0 = time.monotonic()
+    vals = bats.lower_star_filtration(X, img2)
+    t1 = time.monotonic()
+    text.append(t1 - t0)
 
-	t0 = time.monotonic()
-	R = bats.reduce(F, bats.F2(), *flag)
-	t1 = time.monotonic()
-	tred.append(t1 - t0)
+    t0 = time.monotonic()
+    F = bats.FilteredCubicalComplex(X, vals)
+    t1 = time.monotonic()
+    tcon.append(t1 - t0)
 
-	print("\n\nBATS cubical {}".format(label))
-	print("extension: {} sec.".format(np.mean(text)))
-	print("construction: {} sec.".format(np.mean(tcon)))
-	print("tred: {} sec.".format(np.mean(tred)))
-	print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
+    t0 = time.monotonic()
+    R = bats.reduce(F, bats.F2(), *flag)
+    t1 = time.monotonic()
+    tred.append(t1 - t0)
+
+    print("\n\nBATS cubical {}".format(label))
+    print("extension: {} sec.".format(np.mean(text)))
+    print("construction: {} sec.".format(np.mean(tcon)))
+    print("tred: {} sec.".format(np.mean(tred)))
+    print("avg total: {} sec.".format(np.mean(text) + np.mean(tcon) + np.mean(tred)))
 
 
 print("\n\nBATS cubical update image:")
 def time_BATS_cube(img, img2):
-	
-	text = []
-	tupd = []
+
+    text = []
+    tupd = []
 
 
-	# initialize on average image
-	vals = bats.lower_star_filtration(X, img)
-	F = bats.FilteredCubicalComplex(X, vals)
-	R = bats.reduce(F, bats.F2())
-	
-	t0 = time.monotonic()
-	vals = bats.lower_star_filtration(X, img2)
-	t1 = time.monotonic()
-	text.append(t1 - t0)
+    # initialize on average image
+    vals = bats.lower_star_filtration(X, img)
+    F = bats.FilteredCubicalComplex(X, vals)
+    R = bats.reduce(F, bats.F2())
 
-	t0 = time.monotonic()
-	R.update_filtration(vals)
-	t1 = time.monotonic()
-	tupd.append(t1 - t0)
-	
-	print("extension: {} sec.".format(np.mean(text)))
-	print("update: {} sec.".format(np.mean(tupd)))
-	print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
-	
+    t0 = time.monotonic()
+    vals = bats.lower_star_filtration(X, img2)
+    t1 = time.monotonic()
+    text.append(t1 - t0)
+
+    t0 = time.monotonic()
+    R.update_filtration(vals)
+    t1 = time.monotonic()
+    tupd.append(t1 - t0)
+
+    print("extension: {} sec.".format(np.mean(text)))
+    print("update: {} sec.".format(np.mean(tupd)))
+    print("avg total: {} sec.".format(np.mean(text) + np.mean(tupd)))
+
 time_BATS_cube(img, img2)
