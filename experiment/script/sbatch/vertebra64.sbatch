@@ -3,11 +3,11 @@
 #SBATCH --account=pi-bradnelson
 #SBATCH --output=vertebra64.out
 #SBATCH --error=vertebra64.err
-#SBATCH --time=20:00:00
-#SBATCH --partition=bigmem
+#SBATCH --time=1:00:00
+#SBATCH --partition=caslake
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=200G
+#SBATCH --mem-per-cpu=10G
 
 module load python
 

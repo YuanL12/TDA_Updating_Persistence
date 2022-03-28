@@ -20,11 +20,12 @@ def run_all():
     dims = (512, 512, 512)
 
     # load vertebra data
-    # A = np.fromfile('/project/bradnelson/update_persistence/levelset/data/vertebra8.raw', dtype=np.int8)
-    A = np.fromfile('/home/brad/code/TDA_Updating_Persistence/ipynb/data/vertebra8.raw', dtype=np.int8)
+    A = np.fromfile('/project/bradnelson/update_persistence/levelset/data/vertebra8.raw', dtype=np.int8)
+    # A = np.fromfile('/home/brad/code/TDA_Updating_Persistence/ipynb/data/vertebra8.raw', dtype=np.int8)
     A = A.reshape(dims)
     img = np.array(A[::8,::8,::8], copy=True) # (each dimension is 512/8 = 64)
 
+    np.random.seed(0)
     # update from image plus noise
     img2 = img + 0.01 * np.random.randn(*img.shape)
 

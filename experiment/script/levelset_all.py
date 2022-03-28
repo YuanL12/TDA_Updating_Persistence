@@ -16,7 +16,7 @@ def latex_float(f):
 def latex_dk(f):
     if f == "--":
         return f
-    float_str = "{0:.2f}".format(f)
+    float_str = "{0:.2g}".format(f)
     if "e" in float_str:
         base, exponent = float_str.split("e")
         return r"${0} \times 10^{{{1}}}$".format(base, int(exponent))
@@ -24,10 +24,10 @@ def latex_dk(f):
         return float_str
 
 times = dict()
-# times = levelset_mnist.run_all()
-# times.update(levelset_perf.run_all())
-# times.update(levelset_perf3d.run_all())
-# times.update(vertebra64.run_all())
+times.update(levelset_mnist.run_all())
+times.update(levelset_perf.run_all())
+times.update(levelset_perf3d.run_all())
+times.update(vertebra64.run_all())
 
 def time_string(times, fc, name):
     str = "\n& {}".format(name) + \
