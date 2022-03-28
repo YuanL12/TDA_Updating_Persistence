@@ -22,7 +22,7 @@ def run_all():
     # load vertebra data
     A = np.fromfile('/project/bradnelson/update_persistence/levelset/data/vertebra8.raw', dtype=np.int8)
     A = A.reshape(dims)
-    img = A[::8,::8,::8] # (each dimension is 512/8 = 64)
+    img = np.array(A[::8,::8,::8], copy=True) # (each dimension is 512/8 = 64)
 
     # update from image plus noise
     img2 = img + 0.01 * np.random.randn(*img.shape)
@@ -106,7 +106,7 @@ def run_all():
         vals, imap = bats.lower_star_filtration(X, img.flatten())
         t1 = time.monotonic()
         print("time to extend: {} sec.".format(t1 - t0))
-        
+
         t0 = time.monotonic()
         F = bats.FilteredLightSimplicialComplex(X, vals)
         t1 = time.monotonic()
