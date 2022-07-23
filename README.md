@@ -2,7 +2,9 @@
 This is a project about updating persistence mentored by Dr. Bradley J.Nelson. Here is the [pre-print](https://arxiv.org/abs/2108.05022).
 
 ## Overview
-We develop an approach to accelerate persistent homology computations performed on many similar filtered topological spaces which is based on updating associated matrix factorizations. Our approach improves the update scheme of Cohen-Steiner, Edelsbrunner, and Morozov for permutations by additionally handling addition and deletion of cells in a filtered topological space and by processing changes in a single batch.  
+We develop an approach to accelerate persistent homology computations performed on many similar filtered topological spaces which is based on updating associated matrix factorizations. Our approach improves the update scheme of Cohen-Steiner, Edelsbrunner, and Morozov for permutations by additionally handling addition and deletion of cells in a filtered topological space and by processing changes in a single batch. 
+
+After set up with necessary packages, you can quick start by running [demo/Rips Tutorial.ipynb](demo/Rips%20Tutorial.ipynb) for Rips filtration and [ipynb/Levelset Tutorial.ipynb](demo/Levelset%20Tutorial.ipynb) for Levelset filtration.
 
 ## Setup
 If you want to run C++ files, please use the following command for cloning submodule as well (since BATS is a submodule)
